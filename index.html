@@ -222,6 +222,7 @@
         .badge-general { background: #3b82f6; color: white; }
         .badge-math { background: #10b981; color: white; }
         .badge-quotes { background: #8b5cf6; color: white; }
+        .badge-puzzles { background: #ec4899; color: white; }
 
         .point-banner-card { font-size: 1.8rem; font-weight: 900; color: #fbbf24; text-shadow: 0 0 10px rgba(251,191,36,0.3); }
         .main-question-text { font-size: 1.5rem; font-weight: 600; line-height: 1.5; margin-bottom: 25px; text-align: center; color: #ffffff; min-height: 60px;}
@@ -324,6 +325,7 @@ const gameState = {
     teamBScore: 0,
     playedGeneralIndices: [],
     playedQuotesIndices: [],
+    playedPuzzlesIndices: [],
     activeBoxNumber: null,
     activeQuestionObj: null,
     isSelectionLocked: false,
@@ -381,7 +383,7 @@ const actions = {
         }
     },
 
-      displayCategorySelectionWindow() {
+    displayCategorySelectionWindow() {
         const modal = document.getElementById('modalContainer');
         const body = document.getElementById('modalBody');
         modal.style.display = 'flex';
@@ -404,9 +406,16 @@ const actions = {
                     <span class="cat-en">3. Proverbs and quotes</span>
                     <span class="cat-ar">امثال وأقوال</span>
                 </div>
+                <!-- Brand New Fourth Interactive Category Trigger Card Block -->
+                <div class="category-trigger-card" onclick="actions.loadQuestionStage('puzzles')">
+    <span class="cat-en">4. Brain Puzzles</span>
+    <span class="cat-ar">حزازير وألغاز ذكاء</span>
+</div>
+
             </div>
         `;
     },
+
 
     loadQuestionStage(category) {
         const q = questionBank.retrieveQuestion(category);
@@ -416,8 +425,8 @@ const actions = {
         const isRtl = q.language === 'ar';
         const directionClass = isRtl ? 'rtl-direction' : '';
 
-        let badgeLabel = category === 'general' ? 'General Knowledge' : category === 'math' ? 'Mathematics' : 'Quotes & Poetry';
-        let badgeClass = category === 'general' ? 'badge-general' : category === 'math' ? 'badge-math' : 'badge-quotes';
+        let badgeLabel = category === 'general' ? 'General Knowledge' : category === 'math' ? 'Mathematics' : category === 'quotes' ? 'Quotes & Poetry' : 'Brain Puzzles / حزازير';
+        let badgeClass = category === 'general' ? 'badge-general' : category === 'math' ? 'badge-math' : category === 'quotes' ? 'badge-quotes' : 'badge-puzzles';
 
         body.innerHTML = `
             <div class="question-view-header">
@@ -641,6 +650,36 @@ const questionBank = {
     }
     ],
 
+     puzzlesPool: [
+        // 10 English Riddles
+        { text: "What has keys but can't open a single lock, has space but no room, and allows you to enter but never leave?", options: ["A Keyboard", "A Piano", "A Space Shuttle", "A Map"], correctIndex: 0, score: 500, language: "en" },
+        { text: "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?", options: ["An Echo", "A Cloud", "A Shadow", "A Radio"], correctIndex: 0, score: 300, language: "en" },
+        { text: "The person who makes it has no need of it; the person who buys it does not use it for themselves. What is it?", options: ["A Coffin", "A Car", "A Ring", "A House"], correctIndex: 0, score: 400, language: "en" },
+        { text: "What can travel all around the vast world while staying locked inside its tiny single corner?", options: ["A Postage Stamp", "A Passport", "A Compass", "An Envelope"], correctIndex: 0, score: 200, language: "en" },
+        { text: "I have rivers but no water, mountains but no stone, and great cities but no buildings. What am I?", options: ["A Globe", "A Map", "A Textbook", "A Painting"], correctIndex: 1, score: 300, language: "en" },
+        { text: "What is so fragile that merely pronouncing its name out loud breaks it instantly?", options: ["Silence", "Glass", "A Secret", "A Bubble"], correctIndex: 0, score: 200, language: "en" },
+        { text: "What breaks on water but never on land, and disappears the moment the sun goes down?", options: ["A Wave", "A Shadow", "An Ice Cube", "A Reflection"], correctIndex: 1, score: 400, language: "en" },
+        { text: "What goes up but never comes back down as time passes?", options: ["Your Age", "A Balloon", "Smoke", "The Temperature"], correctIndex: 0, score: 100, language: "en" },
+        { text: "What belongs entirely to you, but is used constantly by all your friends and family members instead?", options: ["Your Name", "Your Phone", "Your Car", "Your Secrets"], correctIndex: 0, score: 200, language: "en" },
+        { text: "The more of them you take out of a room, the larger they leave behind. What are they?", options: ["Footsteps", "Holes", "Photographs", "Memories"], correctIndex: 1, score: 400, language: "en" },
+        { text: "A brother says: 'I have as many sisters as brothers.' His sister responds: 'I have twice as many brothers as sisters.' How many children are in this family?", options: ["7 children", "5 children", "6 children", "8 children"], correctIndex: 0, score: 500, language: "en" },
+
+        // 11 Arabic Riddles (حزازير وألغاز ذكاء)
+        { text: "حلزونة تحاول صعود جدار عمودي يبلغ ارتفاعه 10 أمتار. تسير خلال النهار فتقطع 3 أمتار لأعلى، لكنها تنزلق أثناء الليل لتهبط مترين لأسفل. كم يوماً ستحتاج الحلزونة للوصول إلى قمة الجدار تماماً؟", options: ["8 أيام", "10 أيام", "9 أيام", "7 أيام"], correctIndex: 0, score: 500, language: "ar" },
+        { text: "ما هو الشيء الذي يمشي ويقف وليس له أرجل، وإذا توقف عن الحركة مات في الحال؟", options: ["الساعة", "القلب", "النهر", "القطار"], correctIndex: 1, score: 300, language: "ar" },
+        { text: "هو ابن أمتك وابن أبيك، وليس بأخيك ولا بأختك.. فمن يكون؟", options: ["أنت نفسك", "ابن عمك", "خالك", "ابن أختك"], correctIndex: 0, score: 400, language: "ar" },
+        { text: "ما هو الشيء الذي كلما كثر وزاد لدينا في المكان، غابت الرؤية وأصبحنا لا نرى شيئاً؟", options: ["الظلام", "الدخان", "الضباب", "النوم"], correctIndex: 0, score: 200, language: "ar" },
+        { text: "شيء مليء بالثقوب الصغيرة جداً، ولكنه مع ذلك يمتلك قدرة فائقة على الاحتفاظ بالماء داخله؟", options: ["الإسفنج", "الغربال", "القماش", "الشبكة"], correctIndex: 0, score: 100, language: "ar" },
+        { text: "ما هو الشيء الذي يحترق بالكامل لكي يضيء دروب الحياة للآخرين؟", options: ["الشمعة", "الحطب", "المصباح", "الورق"], correctIndex: 0, score: 100, language: "ar" },
+        { text: "إذا قمت بقطع رأسه طار عالياً في السماء، وإذا تركته كما هو سار على الأرض.. فما هو؟", options: ["قطار", "قلم", "كتاب", "طائر"], correctIndex: 0, score: 500, language: "ar" },
+        { text: "يتحرك دائماً حولك ولكنه لا يمتلك جسداً لتراه، ولا يدخل إلى أي مكان إلا إذا دخلت عبر الأبواب؟", options: ["الهواء", "الظل", "الصوت", "الخوف"], correctIndex: 1, score: 300, language: "ar" },
+        { text: "عائلة مكونة من ست بنات وأخ واحد لكل منهن، كم عدد أفراد هذه العائلة الإجمالي بدون الأب والأم؟", options: ["7 أفراد", "12 فرداً", "6 أفراد", "9 أفراد"], correctIndex: 0, score: 400, language: "ar" },
+        { text: "ما هو الشيء الذي يمتلك أسناناً كثيرة جداً ولكنه لا يعض ولا يأكل أي شيء أبداً؟", options: ["المشط", "المنشار", "المفتاح", "العجلة"], correctIndex: 0, score: 100, language: "ar" },
+        { text: "ما هو الشيء الذي تذبحه وتبكي عليه بحرقة، رغم أنه لا يؤذيك إطلاقاً؟", options: ["البصل", "الثوم", "الخروف", "الطير"], correctIndex: 0, score: 100, language: "ar" },
+        { text: "ما هو الشيء الذي يكبر كلما أخذت منه، ويصغر كلما أضفت إليه؟", options: ["الحفرة", "العمر", "الظلام", "الثرثرة"], correctIndex: 0, score: 300, language: "ar" }
+    ],
+
+
     retrieveQuestion(category) {
         const coinFlip = Math.random() > 0.5 ? 'en' : 'ar';
         const scoresTable = [100, 200, 300, 400, 500, 1000];
@@ -655,18 +694,43 @@ const questionBank = {
                     availableIndices.push(idx);
                 }
             });
-
             if (availableIndices.length === 0) {
                 gameState.playedGeneralIndices = gameState.playedGeneralIndices.filter(idx => this.generalPool[idx].language !== coinFlip);
                 this.generalPool.forEach((q, idx) => {
                     if (q.language === coinFlip) availableIndices.push(idx);
                 });
             }
-
             let chosenIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
             gameState.playedGeneralIndices.push(chosenIndex);
-
             return { ...this.generalPool[chosenIndex] };
+
+        } else if (category === 'puzzles') {
+            // Unique tracking processing loop for Brain Puzzles / حزازير
+            let availableIndices = [];
+            this.puzzlesPool.forEach((q, idx) => {
+                if (q.language === coinFlip && !gameState.playedPuzzlesIndices.includes(idx)) {
+                    availableIndices.push(idx);
+                }
+            });
+            if (availableIndices.length === 0) {
+                gameState.playedPuzzlesIndices = gameState.playedPuzzlesIndices.filter(idx => this.puzzlesPool[idx].language !== coinFlip);
+                this.puzzlesPool.forEach((q, idx) => {
+                    if (q.language === coinFlip) availableIndices.push(idx);
+                });
+            }
+            let chosenIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+            gameState.playedPuzzlesIndices.push(chosenIndex);
+
+            // Generate full clean instance with the assigned random score indicator banner
+            let baseQ = this.puzzlesPool[chosenIndex];
+            return {
+                text: baseQ.text,
+                options: baseQ.options,
+                correctIndex: baseQ.correctIndex,
+                score: assignedScore, // Scales points up dynamically like other modes!
+                language: baseQ.language,
+                useKatex: false
+            };
 
         } else {
             let availableIndices = [];
@@ -675,14 +739,12 @@ const questionBank = {
                     availableIndices.push(idx);
                 }
             });
-
             if (availableIndices.length === 0) {
                 gameState.playedQuotesIndices = gameState.playedQuotesIndices.filter(idx => this.quotesPool[idx].language !== coinFlip);
                 this.quotesPool.forEach((q, idx) => {
                     if (q.language === coinFlip) availableIndices.push(idx);
                 });
             }
-
             let chosenIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
             gameState.playedQuotesIndices.push(chosenIndex);
 
@@ -723,7 +785,6 @@ const questionBank = {
             }
         }
     },
-
 
 
     generateDynamicMathQuestion(lang, assignedScore) {
