@@ -1,0 +1,839 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom Icebreaker Challenge</title>
+
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+        <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+ <!-- KaTeX Auto-Render Extension with Custom Delimiter Config -->
+        <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+                onload="renderMathInElement(document.body, {
+                        delimiters: [
+                                {left: '$$', right: '$$', display: true},
+                                {left: '$', right: '$', display: false},
+                                {left: '\\(', right: '\\)', display: false},
+                                {left: '\\[', right: '\\]', display: true}
+                        ],
+                        throwOnError: false
+                });">
+                </script>
+
+    <style>
+         :root {
+            --canvas-bg: #111827;
+            --card-surface: #1f2937;
+            --accent-glow: #3b82f6;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+            --taken-gray: #4b5563;
+            --winner-green: #10b981;
+            --error-red: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--canvas-bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Blocks browser scrollbars entirely */
+        }
+
+        /* Splash Card Screen Layout */
+        .intro-screen {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+        }
+        .intro-card {
+            background: var(--card-surface);
+            padding: 45px 35px;
+            border-radius: 24px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .intro-card h1 {
+            font-size: 2.4rem;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .intro-card p {
+            color: var(--text-muted);
+            font-size: 1.15rem;
+            line-height: 1.7;
+            margin-bottom: 35px;
+        }
+        .action-btn {
+            padding: 14px 35px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s, filter 0.2s;
+        }
+
+        .launch-btn {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            color: white;
+            box-shadow: 0 10px 25px rgba(37,99,235,0.3);
+        }
+        .action-btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.15);
+        }
+
+        /* Compact Arena Layout to eliminate laptop scrolling completely */
+        .game-board-arena {
+            width: 96%;
+            max-width: 1100px;
+            padding: 2px 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .scoreboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+            background: var(--card-surface);
+            padding: 10px 20px;
+            border-radius: 15px;
+            border-bottom: 2px solid rgba(255,255,255,0.05);
+        }
+        .header-branding h2 { font-size: 1.4rem; color: #f3f4f6; }
+        .header-branding p { color: var(--text-muted); font-size: 0.85rem; margin-top: 2px;}
+
+        .team-wrapper { display: flex; gap: 15px; }
+        /* Dynamic Alternating Active Turn Indicators */
+        .team-score {
+            background: rgba(0,0,0,0.2);
+            padding: 6px 14px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 110px;
+            border: 2px solid transparent; /* Placeholder for glowing effect */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0.4; /* Dim by default when it is not their turn */
+        }
+
+        /* When a team is active, remove opacity and give it a premium colored outline glow */
+        .team-score.turn-active {
+            opacity: 1 !important;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255,255,255,0.1);
+        }
+        .team-score.card-a.turn-active { border: 2px solid #ef4444; }
+        .team-score.card-b.turn-active { border: 2px solid #3b82f6; }
+
+        .team-score.card-a { border-left: 4px solid #ef4444; }
+        .team-score.card-b { border-left: 4px solid #3b82f6; }
+        .team-name { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+        .score-digit { font-size: 1.3rem; font-weight: 800; display: block; margin: 2px 0; }
+        .score-adjusters button {
+            background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);
+            font-size: 0.72rem; padding: 1px 5px; margin: 0 1px; border-radius: 4px; cursor: pointer;
+        }
+        .score-adjusters button:hover { color: white; background: rgba(255,255,255,0.05); }
+
+        /* Highly Optimized 10-Column Grid Container */
+           .grid-layout-box {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 12px; /* Slightly widened spacing between boxes */
+            margin-top: 5px;
+        }
+
+        .matrix-item-box {
+            background-color: var(--card-surface);
+            aspect-ratio: 1 / 1;
+            max-height: 10.5vh; /* Increased height from 8.5vh to fill the screen better */
+            border-radius: 14px; /* Made corners rounder to fit the bigger size */
+            font-size: 1.6rem; /* Made numbers larger and easier to read */
+            font-weight: 800;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            border: 3px solid transparent;
+        }
+
+        .matrix-item-box:hover:not(.state-taken) {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+            filter: brightness(1.25);
+        }
+        .matrix-item-box.state-taken {
+            background-color: #262626 !important;
+            border-color: var(--taken-gray) !important;
+            color: var(--taken-gray) !important;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Modern Overlay Modal Layout */
+        .overlay-modal-window {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 15, 30, 0.85); backdrop-filter: blur(8px);
+            display: flex; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-body-wrapper {
+            background: var(--card-surface); width: 90%; max-width: 650px;
+            border-radius: 28px; padding: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.08); position: relative;
+        }
+
+        /* Category Selection Layout */
+        .category-headline { text-align: center; margin-bottom: 25px; font-size: 1.3rem; line-height: 1.5;}
+        .category-stack { display: flex; flex-direction: column; gap: 12px; }
+        .category-trigger-card {
+            background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.08);
+            border-radius: 14px; padding: 12px 20px; cursor: pointer; text-align: left;
+            transition: all 0.2s ease; display: flex; justify-content: space-between; align-items: center;
+        }
+        .category-trigger-card:hover {
+            background: rgba(59, 130, 246, 0.08); border-color: var(--accent-glow); transform: scale(1.01);
+        }
+        .cat-en { font-size: 1.15rem; font-weight: 700; color: #60a5fa; }
+        .cat-ar { font-size: 1.05rem; color: #e5e7eb; font-family: 'Segoe UI', Tahoma, sans-serif; text-align: right;}
+
+        /* Question Display Formatting */
+        .question-view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .badge-label { padding: 4px 12px; border-radius: 30px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase;}
+        .badge-general { background: #3b82f6; color: white; }
+        .badge-math { background: #10b981; color: white; }
+        .badge-quotes { background: #8b5cf6; color: white; }
+
+        .point-banner-card { font-size: 1.8rem; font-weight: 900; color: #fbbf24; text-shadow: 0 0 10px rgba(251,191,36,0.3); }
+        .main-question-text { font-size: 1.5rem; font-weight: 600; line-height: 1.5; margin-bottom: 25px; text-align: center; color: #ffffff; min-height: 60px;}
+        .rtl-direction { direction: rtl; text-align: right; font-family: 'Segoe UI', sans-serif;}
+
+        /* Multiple Choice Grid */
+        .mcq-selection-matrix { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 15px;}
+        .mcq-option-row {
+            background: rgba(255,255,255,0.04); border: 2px solid rgba(255,255,255,0.08);
+            border-radius: 12px; padding: 14px 20px; font-size: 1.1rem; cursor: pointer;
+            transition: all 0.2s ease; text-align: left; color: #e5e7eb; font-weight: 500;
+        }
+        .mcq-option-row:hover:not(.disabled) { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.3); }
+        .mcq-option-row.correct-reveal { background: rgba(16, 185, 129, 0.15) !important; border-color: var(--winner-green) !important; color: #34d399 !important; font-weight: bold;}
+        .mcq-option-row.wrong-reveal { background: rgba(239, 68, 68, 0.15) !important; border-color: var(--error-red) !important; color: #f87171 !important; }
+        .mcq-option-row.disabled { cursor: not-allowed; }
+
+        .modal-close-x {
+            position: absolute; top: 12px; right: 18px; font-size: 1.6rem; background: none;
+            border: none; color: var(--text-muted); cursor: pointer; transition: color 0.2s;
+        }
+        .modal-close-x:hover { color: var(--error-red); }
+    </style>
+
+</head>
+<body>
+
+    <!-- STAGE 1: INTRO TABS & SPLASH PAGE -->
+    <div class="intro-screen" id="introScreen">
+        <div class="intro-card">
+            <h1>Welcome to the New School Year! 🚀</h1>
+            <p>Get ready to break the ice, test your speed, and challenge your friends in this unpredictable bilingual trivia arena. Numbers might lie, but points don't!</p>
+            <button class="action-btn launch-btn" onclick="actions.beginGame()">Let's Play! / لنبدأ اللعب</button>
+        </div>
+    </div>
+    <!-- STAGE 2: MAIN BOARD ARENA -->
+    <div class="game-board-arena" id="gameArena" style="display: none;">
+        <header class="scoreboard-header">
+            <div class="header-branding">
+                <h2>Class Arena 🎯</h2>
+                <p>Pick a student, let them select a box number!</p>
+            </div>
+            <div class="team-wrapper">
+    <div class="team-score card-a">
+ <span class="team-name">Team A</span>
+ <span class="score-digit" id="scoreTeamA">0</span>
+ </div>
+ <div class="team-score card-b">
+ <span class="team-name">Team B</span>
+ <span class="score-digit" id="scoreTeamB">0</span>
+ </div>
+
+            </div>
+        </header>
+
+        <main class="grid-layout-box" id="boxesGrid"></main>
+    </div>
+
+    <div class="overlay-modal-window" id="modalContainer" style="display: none;">
+        <div class="modal-body-wrapper" id="modalBody"></div>
+    </div>
+
+    <script>
+// Native Web Audio Engine Context Controller
+const audioEngine = {
+    ctx: null,
+    init() {
+        if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    },
+    playTone(frequency, type, duration, delay = 0) {
+        this.init();
+        setTimeout(() => {
+            try {
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(frequency, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            } catch (e) { console.error("Audio error", e); }
+        }, delay * 1000);
+    },
+    triggerSuccess() {
+        this.playTone(523.25, 'sine', 0.15, 0);
+        this.playTone(659.25, 'sine', 0.15, 0.08);
+        this.playTone(783.99, 'sine', 0.3, 0.16);
+    },
+    triggerFailure() {
+        this.playTone(180, 'sawtooth', 0.3, 0);
+        this.playTone(130, 'sawtooth', 0.4, 0.1);
+    }
+};
+
+const gameState = {
+    teamAScore: 0,
+    teamBScore: 0,
+    playedGeneralIndices: [],
+    playedQuotesIndices: [],
+    activeBoxNumber: null,
+    activeQuestionObj: null,
+    isSelectionLocked: false,
+    boxColors: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f43f5e'],
+    currentTurnTeam: 'A', // Stores who is currently deciding ('A' or 'B')
+};
+
+const actions = {
+             beginGame() {
+                document.getElementById('introScreen').style.display = 'none';
+                document.getElementById('gameArena').style.display = 'block';
+                this.renderBoxesMatrix();
+
+                // 100% bulletproof: Grabs the score cards by their index positions so it never crashes
+                const scores = document.getElementsByClassName('team-score');
+                if (scores && scores.length >= 2) {
+                    scores[0].classList.add('turn-active');
+                    scores[1].classList.remove('turn-active');
+                }
+            },
+
+    renderBoxesMatrix() {
+        const grid = document.getElementById('boxesGrid');
+        grid.innerHTML = '';
+        for (let i = 1; i <= 50; i++) {
+            const box = document.createElement('div');
+            box.className = 'matrix-item-box';
+            box.innerText = i;
+
+            const randomColor = gameState.boxColors[Math.floor(Math.random() * gameState.boxColors.length)];
+            box.style.borderColor = randomColor;
+            box.style.color = randomColor;
+
+            box.onclick = () => this.handleBoxClick(i, box);
+            grid.appendChild(box);
+        }
+    },
+
+    handleBoxClick(boxNum, element) {
+        if (element.classList.contains('state-taken')) return;
+
+        element.classList.add('state-taken');
+        gameState.activeBoxNumber = boxNum;
+        gameState.isSelectionLocked = false;
+        this.displayCategorySelectionWindow();
+    },
+
+    modifyScore(team, delta) {
+        if (team === 'A') {
+            gameState.teamAScore = Math.max(0, gameState.teamAScore + delta);
+            document.getElementById('scoreTeamA').innerText = gameState.teamAScore;
+        } else {
+            gameState.teamBScore = Math.max(0, gameState.teamBScore + delta);
+            document.getElementById('scoreTeamB').innerText = gameState.teamBScore;
+        }
+    },
+
+      displayCategorySelectionWindow() {
+        const modal = document.getElementById('modalContainer');
+        const body = document.getElementById('modalBody');
+        modal.style.display = 'flex';
+
+        body.innerHTML = `
+            <div class="category-headline">
+                <strong>What type of question do you choose?</strong><br>
+                <span class="rtl-direction">ما هو نوع السؤال الذي تختاره؟</span>
+            </div>
+            <div class="category-stack">
+                <div class="category-trigger-card" onclick="actions.loadQuestionStage('general')">
+                    <span class="cat-en">1. General knowledge</span>
+                    <span class="cat-ar">معلومات عامة</span>
+                </div>
+                <div class="category-trigger-card" onclick="actions.loadQuestionStage('math')">
+                    <span class="cat-en">2. Mathematics</span>
+                    <span class="cat-ar">رياضيات</span>
+                </div>
+                <div class="category-trigger-card" onclick="actions.loadQuestionStage('quotes')">
+                    <span class="cat-en">3. Proverbs and quotes</span>
+                    <span class="cat-ar">امثال وأقوال</span>
+                </div>
+            </div>
+        `;
+    },
+
+    loadQuestionStage(category) {
+        const q = questionBank.retrieveQuestion(category);
+        gameState.activeQuestionObj = q;
+
+        const body = document.getElementById('modalBody');
+        const isRtl = q.language === 'ar';
+        const directionClass = isRtl ? 'rtl-direction' : '';
+
+        let badgeLabel = category === 'general' ? 'General Knowledge' : category === 'math' ? 'Mathematics' : 'Quotes & Poetry';
+        let badgeClass = category === 'general' ? 'badge-general' : category === 'math' ? 'badge-math' : 'badge-quotes';
+
+        body.innerHTML = `
+            <div class="question-view-header">
+                <span class="badge-label ${badgeClass}">${badgeLabel} (Box ${gameState.activeBoxNumber})</span>
+                <span class="point-banner-card">x${q.score}</span>
+            </div>
+            <div class="main-question-text ${directionClass}" id="questionTextArea">${q.text}</div>
+            <div class="mcq-selection-matrix" id="optionsContainer"></div>
+            <!-- Dynamic placeholder wrapper container where the Proceed trigger drops -->
+            <div id="actionButtonWrapper" style="margin-top: 20px; display: flex; justify-content: center;"></div>
+        `;
+
+        const textArea = document.getElementById('questionTextArea');
+// Force math parser rendering if either the question flags it or the text contains mathematical notation blocks
+if ((q.useKatex || q.phrase && q.phrase.includes('\\[')) && window.katex) {
+    try {
+        window.katex.render(q.text, textArea, { throwOnError: false, displayMode: false });
+    } catch (err) { console.error(err); }
+}
+
+        const optionsContainer = document.getElementById('optionsContainer');
+        q.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = `mcq-option-row ${directionClass}`;
+            btn.innerText = opt;
+            btn.onclick = () => this.evaluateAnswerSelection(idx, btn);
+            optionsContainer.appendChild(btn);
+        });
+    },
+
+     evaluateAnswerSelection(selectedIndex, selectedButton) {
+        if (gameState.isSelectionLocked) return;
+        gameState.isSelectionLocked = true;
+
+        const q = gameState.activeQuestionObj;
+        const container = document.getElementById('optionsContainer');
+        const buttons = container.getElementsByTagName('button');
+        const activeTeam = gameState.currentTurnTeam;
+
+        for (let btn of buttons) { btn.classList.add('disabled'); }
+
+        if (selectedIndex === q.correctIndex) {
+            // CORRECT ANSWER: Award full points assigned to that specific random question
+            selectedButton.classList.add('correct-reveal');
+            audioEngine.triggerSuccess();
+            this.modifyScore(activeTeam, q.score);
+        } else {
+            // WRONG ANSWER: Deduct exactly 100 points as requested from the current team
+            selectedButton.classList.add('wrong-reveal');
+            buttons[q.correctIndex].classList.add('correct-reveal');
+            audioEngine.triggerFailure();
+            this.modifyScore(activeTeam, -100);
+        }
+
+        // Alternate turn mechanics: Swap active player profiles automatically for the next box choice
+        gameState.currentTurnTeam = activeTeam === 'A' ? 'B' : 'A';
+
+        // Toggle CSS layout glow wrappers
+        setTimeout(() => {
+            const cardA = document.querySelector('.team-score.card-a');
+            const cardB = document.querySelector('.team-score.card-b');
+            if (gameState.currentTurnTeam === 'A') {
+                cardA.classList.add('turn-active');
+                cardB.classList.remove('turn-active');
+            } else {
+                cardB.classList.add('turn-active');
+                cardA.classList.remove('turn-active');
+            }
+        }, 500); // Tiny smooth delay before shifting focus indicators
+
+        // INJECT THE PROCEED BUTTON DYNAMICALLY HERE
+        const btnWrapper = document.getElementById('actionButtonWrapper');
+        if (btnWrapper) {
+            btnWrapper.innerHTML = `
+                <button class="action-btn launch-btn"
+                        style="width: 100%; max-width: 350px; padding: 12px 0; background: linear-gradient(135deg, #10b981, #059669); font-size: 1.1rem; box-shadow: 0 4px 12px rgba(16,185,129,0.3); border-radius: 50px;"
+                                 onclick="actions.closeModal()">
+             Proceed to Next Round / متابعة اللعب
+         </button>
+     `;
+     }
+ },
+ closeModal() {
+     document.getElementById('modalContainer').style.display = 'none';
+ }
+};
+const questionBank = {
+
+    generalPool: [
+        { text: "What is the speed of light in a vacuum?", options: ["~300,000 km/s", "~150,000 km/s", "~3,000 km/s", "~1,000,000 km/s"], correctIndex: 0, score: 300, language: "en" },
+        { text: "Which planet in our solar system is known as the Red Planet?", options: ["Venus", "Jupiter", "Mars", "Saturn"], correctIndex: 2, score: 100, language: "en" },
+        { text: "What is the highest mountain on planet Earth?", options: ["Mount K2", "Mount Everest", "Kilimanjaro", "Mont Blanc"], correctIndex: 1, score: 100, language: "en" },
+        { text: "How many hearts does an octopus naturally possess?", options: ["1 Heart", "2 Hearts", "3 Hearts", "8 Hearts"], correctIndex: 2, score: 400, language: "en" },
+        { text: "ما هو الحيوان الثديي الوحيد القادر على الطيران الفعلي المستمر؟", options: ["السنجاب الطائر", "الخفاش", "البومة", "الصقر"], correctIndex: 1, score: 400, language: "ar" },
+        { text: "ما هو العنصر الأكثر وفرة في الغلاف الجوي لكوكب الأرض؟", options: ["الأكسجين", "النيتروجين", "الهيدروجين", "الأرجون"], correctIndex: 1, score: 300, language: "ar" },
+        { text: "أي نوع من السيارات يُعزى إليه الفضل في كونه أول سيارة تم إنتاجها بكميات كبيرة في التاريخ؟", options: ["Ford Model T", "Mercedes Benz Patent Motorwagen", "Volkswagen Beetle", "Chevrolet Series 490"], correctIndex: 0, score: 500, language: "en" },
+        { text: "ما هو العضو الوحيد في جسم الإنسان القادر على تجديد خلاياه بالكامل بعد قطع جزء منه؟", options: ["البنكرياس", "الكبد", "الطحال", "الرئة"], correctIndex: 1, score: 500, language: "ar" },
+        { text: "Which land animal is officially recorded as the fastest sprinter on planet Earth?", options: ["Lion", "Cheetah", "Leopard", "Pronghorn"], correctIndex: 1, score: 100, language: "en" },
+        { text: "What basic part of an automotive engine is responsible for sparking and igniting the fuel mixture?", options: ["Piston", "Spark Plug", "Alternator", "Radiator"], correctIndex: 1, score: 200, language: "en" },
+        { text: "What basic component gives plant leaves their vibrant green color?", options: ["Chlorophyll", "Carotene", "Xanthophyll", "Anthocyanin"], correctIndex: 0, score: 300, language: "en" },
+        { text: "Which iconic car manufacturer produces the high-performance 'Mustang' muscle car line?", options: ["Chevrolet", "Dodge", "Ford", "Toyota"], correctIndex: 2, score: 200, language: "en" },
+        { text: "What unique property allows a massive steel cargo ship to float easily on ocean water?", options: ["Gravity", "Buoyancy", "Surface Tension", "Magnetism"], correctIndex: 1, score: 300, language: "en" },
+        { text: "How many bones are found inside a fully grown, adult human body?", options: ["206 Bones", "300 Bones", "150 Bones", "212 Bones"], correctIndex: 0, score: 400, language: "en" },
+        { text: "What deep ocean creature holds the record as the largest mammal to ever exist on planet Earth?", options: ["Whale Shark", "Giant Squid", "Blue Whale", "Orca"], correctIndex: 2, score: 100, language: "en" },
+        { text: "Which basic subatomic particle carries a negative electrical charge inside an atom?", options: ["Proton", "Neutron", "Electron", "Quark"], correctIndex: 2, score: 400, language: "en" },
+        { text: "What is the only type of bird on Earth that is structurally capable of flying backwards?", options: ["Eagle", "Hummingbird", "Swallow", "Owl"], correctIndex: 1, score: 500, language: "en" },
+        { text: "Which Italian city is globally recognized as the historic birthplace of modern sports car brands like Ferrari?", options: ["Rome", "Modena", "Milan", "Naples"], correctIndex: 1, score: 1000, language: "en" },
+        { text: "ما هو الطائر الوحيد الذي يمتلك القدرة على رؤية اللون الأزرق بوضوح؟", options: ["الصقر", "البومة", "الببغاء", "الحمام"], correctIndex: 1, score: 500, language: "ar" },
+        { text: "أي من أجزاء السيارة يرتكز عليه دور إيقاف العجلات عن الدوران عند الضغط على دواسة المكابح؟", options: ["المحرك", "الفحمات والفحمات الدوارة", "ناقل الحركة", "المساعدات"], correctIndex: 1, score: 200, language: "ar" },
+        { text: "كم عدد فقرات عنق الزرافة مقارنة بالإنسان؟", options: ["نفس العدد (7 فقرات)", "ضعف العدد (14 فقرة)", "أكثر بكثير (24 فقرة)", "لا تمتلك فقرات عنق"], correctIndex: 0, score: 400, language: "ar" },
+        { text: "ما هي أسرع السيارات الرياضية إنتاجاً في العالم والتي تجاوزت حاجز الـ 490 كم/ساعة؟", options: ["Bugatti Chiron Super Sport", "Ferrari LaFerrari", "Lamborghini Aventador", "Porsche 911 GT3"], correctIndex: 0, score: 500, language: "ar" },
+        { text: "ما هو المعدن الوحيد الذي يتواجد في حالة سائلة طبيعية عند درجة حرارة الغرفة؟", options: ["الحديد", "الزئبق", "النحاس", "الألومنيوم"], correctIndex: 1, score: 300, language: "ar" },
+        { text: "أي غدة في جسم الإنسان تُعرف باسم 'الغدة الرئيسية' لكونها تتحكم في معظم الغدد الصماء الأخرى؟", options: ["الغدة الدرقية", "الغدة النخامية", "الغدة الكظرية", "البنكرياس"], correctIndex: 1, score: 1000, language: "ar" },
+        { text: "ما هو الحيوان الوحيد الذي لا ينام طوال فترة حياته منذ الولادة وحتى الموت؟", options: ["القرش", "النملة", "الضفدع", "الدلفين"], correctIndex: 1, score: 400, language: "ar" },
+        { text: "ما هو أقرب نجم كوني إلى كوكب الأرض؟", options: ["نجم القطب", "الشمس", "الشعرى اليمانية", "ألفا قنطورس"], correctIndex: 1, score: 100, language: "ar" },
+        { text: "ما هي أصغر قارة موجودة على سطح الأرض من حيث المساحة الجغرافية؟", options: ["أوروبا", "أستراليا", "أمريكا الجنوبية", "أفريقيا"], correctIndex: 1, score: 200, language: "ar" },
+        { text: "كم عدد الغرف العضلية (الأذين والبطين) التي يتكون منها قلب التمساح؟", options: ["غرفتان", "ثلاث غرف", "أربع غرف", "خمس غرف"], correctIndex: 2, score: 600, language: "ar" },
+        { text: "Which mammal has the most powerful bite force in the animal kingdom?", options: ["Hippopotamus", "Grizzly Bear", "African Lion", "Hyena"], correctIndex: 0, score: 500, language: "en" },
+        { text: "What is the fastest production car in the world by top speed?", options: ["Bugatti Chiron Super Sport", "Koenigsegg Jesko Absolut", "Hennessey Venom F5", "SSC Tuatara"], correctIndex: 1, score: 500, language: "en" },
+        { text: "How many bones do sharks naturally have in their bodies?", options: ["0 Bones", "206 Bones", "42 Bones", "150 Bones"], correctIndex: 0, score: 400, language: "en" },
+        { text: "What is the only bird that is capable of flying backwards?", options: ["Hummingbird", "Swift", "Swallow", "Albatross"], correctIndex: 0, score: 200, language: "en" },
+        { text: "Which country produces the most premium sports cars under the Ferrari brand?", options: ["Germany", "Italy", "France", "Japan"], correctIndex: 1, score: 100, language: "en" },
+        { text: "What is the hardest natural substance known on planet Earth?", options: ["Titanium", "Graphene", "Diamond", "Quartz"], correctIndex: 2, score: 100, language: "en" },
+        { text: "How many legs does a typical household spider possess?", options: ["6 Legs", "8 Legs", "10 Legs", "12 Legs"], correctIndex: 1, score: 100, language: "en" },
+        { text: "What is the primary gas that makes up the surface atmosphere of the Sun?", options: ["Oxygen", "Hydrogen", "Helium", "Nitrogen"], correctIndex: 1, score: 300, language: "en" },
+        { text: "Which internal organ filters all the blood in the human body every 45 minutes?", options: ["The Kidneys", "The Liver", "The Spleen", "The Pancreas"], correctIndex: 0, score: 400, language: "en" },
+        { text: "What basic car component regulates the air-fuel mixture in classic combustion engines?", options: ["Alternator", "Carburetor", "Radiator", "Spark Plug"], correctIndex: 1, score: 300, language: "en" },
+        { text: "ما هو الحيوان الذي يستطيع رؤية الأشعة فوق البنفسجية ويمتلك أغرب عيون في العالم؟", options: ["الحبار العملاق", "روبيان المانتیس", "قنديل البحر البورمي", "الأخطبوط الأزرق"], correctIndex: 1, score: 500, language: "ar" },
+        { text: "أي دولة تعد الموطن الأصلي لشركة سيارات 'تويوتا' الشهيرة؟", options: ["كوريا الجنوبية", "اليابان", "ألمانيا", "الولايات المتحدة"], correctIndex: 1, score: 100, language: "ar" },
+        { text: "ما هي أسرع فصيلة قطط برية في العالم على مسافات قصيرة؟", options: ["الفهد الصياد (الشيتا)", "النمر السيبيري", "الأسد الإفريقي", "اليغور"], correctIndex: 0, score: 100, language: "ar" },
+        { text: "كم عدد الكروموسومات الموجودة في الخلية البشرية الطبيعية؟", options: ["23 كروموسوم", "46 كروموسوم", "12 كروموسوم", "52 كروموسوم"], correctIndex: 1, score: 200, language: "ar" },
+        { text: "ما هو الطائر الوحيد الذي يمتلك حاسة شم قوية جداً ويفتقر إلى ذيل؟", options: ["الكيوي", "النعامة", "البطريق", "الطاووس"], correctIndex: 0, score: 400, language: "ar" },
+        { text: "ما هو الكوكب الأقرب إلى الشمس في نظامنا الشمسي؟", options: ["المريخ", "الزهرة", "عطارد", "الأرض"], correctIndex: 2, score: 100, language: "ar" },
+        { text: "أي غاز من الغازات التالية يتسبب في ارتفاع العجين عند الخبز؟", options: ["الأكسجين", "ثاني أكسيد الكربون", "الهيدروجين", "النيتروجين"], correctIndex: 1, score: 300, language: "ar" },
+        { text: "ما هو اسم أعمق نقطة مائية معروفة في المحيطات على سطح الأرض؟", options: ["خندق ماريانا", "خندق بورتوريكو", "خندق جافا", "خندق تونغا"], correctIndex: 0, score: 300, language: "ar" },
+        { text: "ما هي وظيفة 'المبرد' (الرديتر) الأساسية في محرك السيارة؟", options: ["توليد الكهرباء", "تبريد المحرك", "تنقية الوقود", "توزيع الزيت"], correctIndex: 1, score: 100, language: "ar" },
+        { text: "ما هو الطائر الذي يضع أكبر بيضة في العالم بالنسبة لحجمه؟", options: ["النعامة", "طائر الكيوي", "العقاب الذهبي", "البجعة"], correctIndex: 1, score: 400, language: "ar" }
+    ],
+
+    quotesPool: [
+        { phrase: "Not all that glitters is gold", type: "scramble", score: 300, language: "en" },
+        { phrase: "You never know what you can do till you try", type: "scramble", score: 400, language: "en" },
+        { phrase: "Money is the root of all evil", type: "scramble", score: 200, language: "en" },
+        { phrase: "A little learning is a dangerous thing", type: "scramble", score: 500, language: "en" },
+        { phrase: "To compete you've got to be strong, to win you've got to be smart", type: "scramble", score: 1000, language: "en" },
+        { firstHalf: "إذا رأيت نيوب الليث بارزة ...", correct: "فلا تظنن أن الليث يبتسمُ", distractors: ["فلا تحسبن أن الصيد يهربُ", "فاعلم أن الليث جائعٌ جداً", "فاحذر فإن الموت يقتربُ"], type: "poetry", score: 500, language: "ar" },
+        { firstHalf: "إذا أنت أكرمت الكريم ملكته ...", correct: "وإن أنت أكرمت اللئيم تمردا", distractors: ["وإن أنت أهنته توددا وتلطفا", "وإن أنت أسأت إليه تندما دهرًا", "وعشت عزيزاً مكسباً وممجداً بين الناس"], type: "poetry", score: 400, language: "ar" },
+        { firstHalf: "وما نيل المطالب بالتمني ...", correct: "ولكن تؤخذ الدنيا غلابا", distractors: ["ولكن من سعى وصبر أصابا", "وليس المرء يولد مستشاراً", "فمن طلب العلا سهر اللياليا"], type: "poetry", score: 600, language: "ar" },
+        { phrase: "We don't see things as they are, we see things as we are", type: "scramble", score: 600, language: "en" },
+        { phrase: "If you're not part of the solution, you're part of the problem", type: "scramble", score: 400, language: "en" },
+        { phrase: "Heaven is at plus infinity. Hell is at the opposite side", type: "scramble", score: 500, language: "en" },
+        { phrase: "Who makes himself a sheep will be eaten by the wolves", type: "scramble", score: 300, language: "en" },
+        { phrase: "What doesn't kill you makes you stronger", type: "scramble", score: 200, language: "en" },
+        { phrase: "Necessity is the mother of all inventions", type: "scramble", score: 300, language: "en" },
+        { phrase: "An expert is one who knows more and more about less and less", type: "scramble", score: 600, language: "en" },
+        { phrase: "Art is never finished, only abandoned", type: "scramble", score: 400, language: "en" },
+        { phrase: "Share your knowledge. It is a way to achieve immortality", type: "scramble", score: 500, language: "en" },
+        { phrase: "To be a success in business, be daring, be first, be different", type: "scramble", score: 600, language: "en" },
+        { phrase: "Good luck is a lazy man's estimate of a worker's success", type: "scramble", score: 400, language: "en" },
+        { phrase: "There is no wealth like knowledge, no poverty like ignorance", type: "scramble", score: 300, language: "en" },
+        { phrase: "Good fences make good neighbors", type: "scramble", score: 200, language: "en" },
+{
+    firstHalf: `إِذَا أَتَتْكَ مَذَمَّتِي مِنْ نَاقِصٍ ...`,
+    correct: `فَهِيَ الشَّهَادَةُ لِي بِأَنِّي كَامِلُ`,
+    distractors: [
+        `فَإِذَا بِهَا كَذِبٌ وَقَوْلٌ بَاطِلُ`,
+        `فَاعْلَمْ بِأَنَّكَ فِي الأَنَامِ فُضَيْلُ`,
+        `فَاحْذَرْ فَإِنَّ لِسَانَهُ قَاتِلُ`
+    ],
+    type: "poetry",
+    score: 600,
+    language: "ar"
+},
+        { firstHalf: "الأفعال أبلغ من ...", correct: "الأقوال", distractors: ["الأمثال", "الخطابات", "الأفكار"], type: "poetry", score: 100, language: "ar" },
+        { firstHalf: "على قدر أهل العزم تأتي العزائم ...", correct: "وتأتي على قدر الكرام المكارمُ", distractors: ["وتكبر في عين الصغير الصغائرُ", "وتهون عند أولي النهى العظائمُ", "والمجد لا يناله إلا المسالمُ"], type: "poetry", score: 500, language: "ar" },
+        { firstHalf: "نعيب زماننا والعيب فينا ...", correct: "وما لزماننا عيبٌ سوانا", distractors: ["ونهجو دهرنا عمداً وجهلاً", "وليس لبلوانا طبيبٌ يداوينا", "وقد غدرت بنا حتى الأماني"], type: "poetry", score: 400, language: "ar" },
+        { firstHalf: "لا تؤجل عمل اليوم إلى ...", correct: "الغد", distractors: ["الأسبوع القادم", "المساء", "وقت لاحق"], type: "poetry", score: 100, language: "ar" },
+        { firstHalf: "العلم في الصغر كالنقش على ...", correct: "الحجر", distractors: ["الورق", "الماء", "الذهب"], type: "poetry", score: 100, language: "ar" },
+        { firstHalf: "مَنْ لَمْ يَمُتْ بِالسَّيْفِ مَاتَ بِغَيْرِهِ ...", correct: "تَعَدَّدَتِ الأَسْبَابُ وَالمَوْتُ وَاحِدُ", distractors: ["فَلَيْسَ لَهُ مَجْدٌ إِذَا الخَوْفُ سَائِدُ", "وَكُلُّ امْرِئٍ يَوْمًا إِلَى القَبْرِ وَارِدُ", "فَمَا فَازَ فِي الدُّنْيَا جَبَانٌ مُحَايِدُ"], type: "poetry", score: 600, language: "ar" },
+        { phrase: "The path to success is to take massive, determined action", type: "scramble", score: 300, language: "en" },
+        { phrase: "In chess games, there is no possibility of creating a win solely out of your own genius; You cannot win unless your opponent makes a mistake!", type: "scramble", score: 1000, language: "en" },
+        { phrase: "Reading is to the mind what exercise is to the body", type: "scramble", score: 300, language: "en" },
+        { phrase: "There are no gains without pains", type: "scramble", score: 200, language: "en" },
+        { phrase: "The strong do what they will, the weak do what they must!", type: "scramble", score: 500, language: "en" },
+        { phrase: "What you keep to yourself, you lose. What you give away, you keep forever", type: "scramble", score: 400, language: "en" },
+        { phrase: "$$$ = \\[\\sqrt{\\text{evil}}\\] (Money is the root of all evil)", type: "scramble", score: 400, language: "en" },
+        { phrase: "Rust Never Sleeps", type: "scramble", score: 200, language: "en" },
+        { phrase: "In general, smart men are not brave, and brave men are not smart!", type: "scramble", score: 600, language: "en" },
+        { phrase: "Never argue with a fool - People might not know the difference", type: "scramble", score: 400, language: "en" },
+        { phrase: "Mathematics, rightly viewed, possesses not only truth, but supreme beauty — a beauty cold and austere, like that of sculpture", type: "scramble", score: 800, language: "en" },
+        { phrase: "If you have a good motive, you can do what your mind says you can't do!", type: "scramble", score: 500, language: "en" },
+        { firstHalf: "إِذَا غَامَرْتَ فِي شَرَفٍ مَرُومٍ ...", correct: "فَلَا تَرْضَى بِمَا دُونَ النُّجُومِ", distractors: ["فَإِنَّ المَجْدَ لِلْبَطَلِ الجَسُورِ", "فَعِشْ حُرًّا وَمُتْ بَيْنَ الفُهُودِ", "فَمَا فِيهَا مَقَامٌ لِلْكَسُولِ"], type: "poetry", score: 600, language: "ar" },
+        { firstHalf: "نَقِّلْ فُؤَادَكَ حَيْثُ شِئْتَ مِنَ الهَوَى ...", correct: "مَا الحُبُّ إِلاَّ لِلْحَبِيبِ الأَوَّلِ", distractors: ["فَالعُمْرُ يَمْضِي وَالزَّمَانُ بِمَعْزِلِ", "وَاحْذَرْ وِدَادَ الخَائِنِ المُتَبَدِّلِ", "وَاعْلَمْ بِأَنَّ المَجْدَ لَيْسَ بِمُهْمَلِ"], type: "poetry", score: 600, language: "ar" },
+        { firstHalf: "وَمَنْ يَصْنَعِ المَعْرُوفَ فِي غَيْرِ أَهْلِهِ ...", correct: "يَكُنْ حَمْدُهُ ذَمًّا عَلَيْهِ وَيَنْدَمِ", distractors: ["يَذُقْ مُرَّ جَهْلٍ مِنْ فِعَالِ الأَرَاذِلِ", "يَعِشْ بَيْنَ أَنَامِ الدَّهْرِ بَاكٍ وَمُحْرَمِ", "فَمَا لَهُ فِي المَكْرُمَاتِ مِنْ سَاهِمِ"], type: "poetry", score: 600, language: "ar" },
+        { phrase: "العلم في الصدور وليس في السطور", type: "scramble", score: 400, language: "ar" },
+        { firstHalf: "ذُو العَقْلِ يَشْقَى فِي النَّعِيمِ بِعَقْلِهِ ...", correct: "وَأَخُو الجَهَالَةِ فِي الشَّقَاوَةِ يَنْعَمُ", distractors: ["وَتَرَى المَنَايَا بِالعُقُولِ تُقَسَّمُ", "وَالعَقْلُ لِلْمَرْءِ اللَّبِيبِ مُحَطِّمُ", "فَمَا فَازَ فِي الدُّنْيَا جَهُولٌ يَعْلَمُ"], type: "poetry", score: 600, language: "ar" },
+        { firstHalf: "لَقَدْ أَسْمَعْتَ لَوْ نَادَيْتَ حَيًّا ...", correct: "وَلَكِنْ لَا حَيَاةَ لِمَنْ تُنَادِي", distractors: ["وَلَكِنْ ضَاعَ صَوْتُكَ فِي الفَجَاجِ", "فَمَا جَدْوَى المَلَامِ مَعَ الجَمَادِ", "وَأَذَّنْتَ الصَّلَاةَ بِأَرْضِ عَادِ"], type: "poetry", score: 600, language: "ar" },
+   {
+    firstHalf: "وَمَنْ يتهيب صُعُودَ الجِبَـالِ ...",
+    correct: "يَعِشْ أَبَدَ الدَّهْرِ بَيْنَ الحُفَرِ",
+    distractors: [
+        "يَظَلَّ طَوَالَ العُمْرِ فِي خَطَرِ",
+        "يَمُتْ كَمَدًا فِي زَحْمَةِ البَشَرِ",
+        "فَلَيْسَ لَهُ حَظٌّ مَعَ القَدَرِ"
+    ],
+    type: "poetry",
+    score: 600,
+    language: "ar"
+    },
+    {
+    firstHalf: "وَلَمْ أَرَ فِي عُيُوبِ النَّاسِ شَيْئًا ...",
+    correct: "كَنَقْصِ القَادِرِينَ عَلَى التَّمَامِ",
+    distractors: [
+        "كَقِلَّةِ عِلْمِهِمْ بَيْن الأَنَامِ",
+        "كَمَنْ رَضِيَ المَذَلَّةَ فِي المَقَامِ",
+        "إِذَا ضَاعَ الحَيَاءُ مَعَ الكَلَامِ"
+    ],
+    type: "poetry",
+    score: 600,
+    language: "ar"
+    }
+    ],
+
+    retrieveQuestion(category) {
+        const coinFlip = Math.random() > 0.5 ? 'en' : 'ar';
+        const scoresTable = [100, 200, 300, 400, 500, 1000];
+        const assignedScore = scoresTable[Math.floor(Math.random() * scoresTable.length)];
+
+        if (category === 'math') {
+            return this.generateDynamicMathQuestion(coinFlip, assignedScore);
+        } else if (category === 'general') {
+            let availableIndices = [];
+            this.generalPool.forEach((q, idx) => {
+                if (q.language === coinFlip && !gameState.playedGeneralIndices.includes(idx)) {
+                    availableIndices.push(idx);
+                }
+            });
+
+            if (availableIndices.length === 0) {
+                gameState.playedGeneralIndices = gameState.playedGeneralIndices.filter(idx => this.generalPool[idx].language !== coinFlip);
+                this.generalPool.forEach((q, idx) => {
+                    if (q.language === coinFlip) availableIndices.push(idx);
+                });
+            }
+
+            let chosenIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+            gameState.playedGeneralIndices.push(chosenIndex);
+
+            return { ...this.generalPool[chosenIndex] };
+
+        } else {
+            let availableIndices = [];
+            this.quotesPool.forEach((q, idx) => {
+                if (q.language === coinFlip && !gameState.playedQuotesIndices.includes(idx)) {
+                    availableIndices.push(idx);
+                }
+            });
+
+            if (availableIndices.length === 0) {
+                gameState.playedQuotesIndices = gameState.playedQuotesIndices.filter(idx => this.quotesPool[idx].language !== coinFlip);
+                this.quotesPool.forEach((q, idx) => {
+                    if (q.language === coinFlip) availableIndices.push(idx);
+                });
+            }
+
+            let chosenIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+            gameState.playedQuotesIndices.push(chosenIndex);
+
+            let rawQuote = this.quotesPool[chosenIndex];
+
+            if (rawQuote.type === 'poetry') {
+                let options = [rawQuote.correct, ...rawQuote.distractors].sort(() => Math.random() - 0.5);
+                return {
+                    text: 'Complete the classical Arabic poetic verse / أكمل شطر البيت الشعري التالي:<br><br><strong class="rtl-direction" style="display:block; text-align:center; font-size:1.8rem; padding:10px 0;">"' + rawQuote.firstHalf + '"</strong>',
+                    options: options,
+                    correctIndex: options.indexOf(rawQuote.correct),
+                    score: rawQuote.score,
+                    language: "ar"
+                };
+            } else {
+                let cleanedPhrase = rawQuote.phrase.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
+                let wordsArr = cleanedPhrase.split(" ");
+                let originalText = cleanedPhrase;
+                let scrambledHints = [...wordsArr].sort(() => Math.random() - 0.5).join(" / ");
+
+                let alt1 = [...wordsArr].reverse().join(" ");
+                let alt2 = [...wordsArr].sort(() => Math.random() - 0.5).join(" ");
+                let alt3 = [...wordsArr].slice(2).concat([...wordsArr].slice(0, 2)).join(" ");
+
+                let optionsSet = new Set([originalText, alt1, alt2, alt3]);
+                while(optionsSet.size < 4) {
+                    optionsSet.add([...wordsArr].sort(() => Math.random() - 0.5).join(" "));
+                }
+                let options = Array.from(optionsSet).sort(() => Math.random() - 0.5);
+
+                return {
+                    text: 'Unscramble this famous life quote into its proper structural order:<br><br><strong style="display:block; text-align:center; color:#fbbf24; font-size:1.5rem;">[ ' + scrambledHints + ' ]</strong>',
+                    options: options,
+                    correctIndex: options.indexOf(originalText),
+                    score: rawQuote.score,
+                    language: "en"
+                };
+            }
+        }
+    },
+
+
+
+    generateDynamicMathQuestion(lang, assignedScore) {
+        const types = ['addition3', 'multiply11', 'triangleArea', 'rightTriangleArea', 'subtraction', 'squareRoot', 'percentageProfit'];
+        const chosenType = types[Math.floor(Math.random() * types.length)];
+
+        let questionText = "";
+        let correctAnswer = 0;
+        let options = [];
+        let useKatex = false;
+
+        switch(chosenType) {
+            case 'addition3': {
+                let n1 = Math.floor(Math.random() * 9000) + 100;
+                let n2 = Math.floor(Math.random() * 9000) + 100;
+                let n3 = Math.floor(Math.random() * 9000) + 100;
+                correctAnswer = n1 + n2 + n3;
+                questionText = lang === 'en'
+                    ? `Calculate the combined sum of these three numbers: <br><br><strong style="font-size:2rem;">${n1} + ${n2} + ${n3}</strong>`
+                    : `أوجد المجموع الحسابي الإجمالي للأعداد الثلاثة التالية: <br><br><strong style="font-size:2rem;">${n1} + ${n2} + ${n3}</strong>`;
+                break;
+            }
+            case 'multiply11': {
+                let factor = Math.floor(Math.random() * 89) + 11;
+                correctAnswer = factor * 11;
+                questionText = lang === 'en'
+                    ? `What is the exact mathematical product of: <br><br><strong>${factor} \\times 11</strong>?`
+                    : `ما هو الناتج الدقيق لعملية الضرب التالية: <br><br><strong>${factor} \\times 11</strong>؟`;
+                useKatex = true;
+                break;
+            }
+            case 'triangleArea': {
+                let base = (Math.floor(Math.random() * 20) + 4) * 2;
+                let height = Math.floor(Math.random() * 15) + 3;
+                correctAnswer = (base * height) / 2;
+                questionText = lang === 'en'
+                    ? `A triangle features a base length of <strong>${base} cm</strong> and a vertical height of <strong>${height} cm</strong>. Calculate its total area.`
+                    : `مثلث طول قاعدته يساوي <strong>${base} سم</strong> وارتفاعه العمودي يبلغ <strong>${height} سم</strong>. احسب مساحته الكلية.`;
+                break;
+            }
+            case 'rightTriangleArea': {
+                let sideA = Math.floor(Math.random() * 12) + 5;
+                let sideB = Math.floor(Math.random() * 10) + 4;
+                correctAnswer = (sideA * sideB) / 2;
+                questionText = lang === 'en'
+                    ? `A right-angled triangle has two legs adjacent to the right angle measuring <strong>${sideA} cm</strong> and <strong>${sideB} cm</strong>. What is its total surface area?`
+                    : `مثلث قائم الزاوية يبلغ طول ضلعي القائمة المحيطين بالزاوية القائمة <strong>${sideA} سم</strong> و <strong>${sideB} سم</strong>. ما هي مساحته؟`;
+                break;
+            }
+            case 'subtraction': {
+                let baseNum = Math.random() > 0.5 ? 100 : 1000;
+                let subtracted = Math.floor(Math.random() * (baseNum - 15)) + 10;
+                correctAnswer = baseNum - subtracted;
+                questionText = lang === 'en'
+                    ? `Solve this mental calculation parameter swiftly: <br><br><strong style="font-size:2rem;">${baseNum} - ${subtracted}</strong>`
+                    : `حل مسألة الطرح الذهني السريع التالية مباشرة: <br><br><strong style="font-size:2rem;">${baseNum} - ${subtracted}</strong>`;
+                break;
+            }
+            case 'squareRoot': {
+                const rootsPool = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 30];
+                correctAnswer = rootsPool[Math.floor(Math.random() * rootsPool.length)];
+                let square = correctAnswer * correctAnswer;
+                questionText = lang === 'en'
+                    ? `Evaluate the numerical expression to find the root value: <br><br><strong>\\sqrt{${square}}</strong>`
+                    : `احسب القيمة العددية الصحيحة الناتجة عن مخرجات الجذر التربيعي التالي: <br><br><strong>\\sqrt{${square}}</strong>`;
+                useKatex = true;
+                break;
+            }
+            case 'percentageProfit': {
+                let buyPrice = (Math.floor(Math.random() * 5) + 2) * 10;
+                const factorsList = [1.25, 1.5, 1.75, 2.0];
+                let scaleFactor = factorsList[Math.floor(Math.random() * factorsList.length)];
+                let sellPrice = buyPrice * scaleFactor;
+
+                correctAnswer = Math.round(((sellPrice - buyPrice) / buyPrice) * 100);
+                questionText = lang === 'en'
+                    ? `You bought a mobile phone for <strong>$${buyPrice}</strong> and sold it later for <strong>$${sellPrice}</strong>. What is the total percentage profit?`
+                    : `قمت بشراء هاتف ذكي بقيمة <strong>$${buyPrice}</strong> ثم قمت بإعادة بيعه لاحقاً بمبلغ <strong>$${sellPrice}</strong>. احسب النسبة المئوية للربح المحقق.`;
+                break;
+            }
+        }
+
+        let optionsSet = new Set([correctAnswer]);
+        while(optionsSet.size < 4) {
+            let variance = (Math.floor(Math.random() * 5) + 1) * (Math.random() > 0.5 ? 1 : -1);
+            let scalar = Math.random() > 0.5 ? 10 : 5;
+            let fakeAns = chosenType === 'percentageProfit'
+                ? correctAnswer + (variance * 5)
+                : correctAnswer + (variance * (Math.random() > 0.5 ? 1 : scalar));
+
+            if (fakeAns > 0 && fakeAns !== correctAnswer) {
+                optionsSet.add(fakeAns);
+            }
+        }
+
+        options = Array.from(optionsSet).sort((a, b) => a - b);
+        let finalOptionsStrings = options.map(opt => chosenType === 'percentageProfit' ? `${opt}%` : `${opt}`);
+        let finalCorrectIndex = options.indexOf(correctAnswer);
+
+        return {
+            text: questionText,
+            options: finalOptionsStrings,
+            correctIndex: finalCorrectIndex,
+            score: assignedScore,
+            language: lang,
+            useKatex: useKatex
+        };
+    }
+};
+
+    </script>
+</body>
+</html>
