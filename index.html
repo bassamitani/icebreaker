@@ -433,29 +433,63 @@ const actions = {
                 <span class="badge-label ${badgeClass}">${badgeLabel} (Box ${gameState.activeBoxNumber})</span>
                 <span class="point-banner-card">x${q.score}</span>
             </div>
-            <div class="main-question-text ${directionClass}" id="questionTextArea">${q.text}</div>
+            <!-- Base question question introductory sentence text -->
+            <div class="main-question-text ${directionClass}">${q.text}</div>
+
+            <!-- EXPLICIT DYNAMIC EMPTY MATH EQUATION PLACEHOLDER CONTAINER BOX -->
+            <div id="mathMathEquationBox" style="font-size: 2.2rem; font-weight: bold; color: #3b82f6; text-align: center; margin: 15px 0; min-height: 45px; width: 100%;"></div>
+
             <div class="mcq-selection-matrix" id="optionsContainer"></div>
-            <!-- Dynamic placeholder wrapper container where the Proceed trigger drops -->
             <div id="actionButtonWrapper" style="margin-top: 20px; display: flex; justify-content: center;"></div>
         `;
 
-        const textArea = document.getElementById('questionTextArea');
-// Force math parser rendering if either the question flags it or the text contains mathematical notation blocks
-if ((q.useKatex || q.phrase && q.phrase.includes('\\[')) && window.katex) {
-    try {
-        window.katex.render(q.text, textArea, { throwOnError: false, displayMode: false });
-    } catch (err) { console.error(err); }
-}
+        // TARGET AND RENDER THE FORMULA DIRECTLY VIA EXPLICIT ENGINE RENDERING (Inspired by Math Arena!)
+        const formulaBox = document.getElementById('mathMathEquationBox');
+        if (q.useKatex && q.formula && window.katex) {
+            try {
+                window.katex.render(q.formula, formulaBox, { throwOnError: false, displayMode: true });
+            } catch (err) { console.error("Native KaTeX Engine render crash: ", err); }
+        }
 
-        const optionsContainer = document.getElementById('optionsContainer');
+                // Force-scan and render inline math symbols (like \sqrt) directly inside the sentence question block text area
+        const questionTextContainer = document.querySelector('.main-question-text');
+        if (q.useKatex && window.renderMathInElement && questionTextContainer) {
+            try {
+                window.renderMathInElement(questionTextContainer, {
+                    delimiters: [
+                        {left: '\\\\(', right: '\\\\)', display: false},
+                        {left: '\\(', right: '\\)', display: false},
+                        {left: '$', right: '$', display: false} // Optional safety catch fallback
+                    ],
+                    throwOnError: false
+                });
+            } catch (err) { console.error("Inline question scan crash: ", err); }
+        }
+
+          const optionsContainer = document.getElementById('optionsContainer');
         q.options.forEach((opt, idx) => {
             const btn = document.createElement('button');
             btn.className = `mcq-option-row ${directionClass}`;
-            btn.innerText = opt;
+            btn.style.color = '#ffffff';
+
+            // Only use KaTeX engine if the question explicitly requested it (Triangles, Roots, etc.)
+            if (category === 'math' && q.useKatex && window.katex) {
+                try {
+                    window.katex.render(opt, btn, { throwOnError: false });
+                } catch (err) {
+                    btn.innerText = opt;
+                }
+            } else {
+                // Safely handles regular numbers, strings, percentages, and car currency formatting (\$3,500)
+                btn.innerText = opt;
+            }
+
             btn.onclick = () => this.evaluateAnswerSelection(idx, btn);
             optionsContainer.appendChild(btn);
         });
+
     },
+
 
      evaluateAnswerSelection(selectedIndex, selectedButton) {
         if (gameState.isSelectionLocked) return;
@@ -788,69 +822,150 @@ const questionBank = {
 
 
     generateDynamicMathQuestion(lang, assignedScore) {
-        const types = ['addition3', 'multiply11', 'triangleArea', 'rightTriangleArea', 'subtraction', 'squareRoot', 'percentageProfit'];
+    const types = ['addition3', 'multiply11', 'triangleArea', 'rightTriangleArea', 'subtraction', 'squareRoot', 'percentageProfit', 'semiEquilateral', 'rightIsosceles', 'carPercentage'];
         const chosenType = types[Math.floor(Math.random() * types.length)];
 
         let questionText = "";
-        let correctAnswer = 0;
-        let options = [];
-        let useKatex = false;
+        let formulaString = ""; // Separated container property targeting formulas explicitly
+        let correctAnswerString = "";
+        let rawOptions = [];
+        let useKatex = true;
+
+        const rootsPool = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 30];
 
         switch(chosenType) {
             case 'addition3': {
                 let n1 = Math.floor(Math.random() * 9000) + 100;
                 let n2 = Math.floor(Math.random() * 9000) + 100;
                 let n3 = Math.floor(Math.random() * 9000) + 100;
-                correctAnswer = n1 + n2 + n3;
+                let ans = n1 + n2 + n3;
+                correctAnswerString = String(ans);
                 questionText = lang === 'en'
-                    ? `Calculate the combined sum of these three numbers: <br><br><strong style="font-size:2rem;">${n1} + ${n2} + ${n3}</strong>`
-                    : `أوجد المجموع الحسابي الإجمالي للأعداد الثلاثة التالية: <br><br><strong style="font-size:2rem;">${n1} + ${n2} + ${n3}</strong>`;
+                    ? "Calculate the combined sum of these three numbers:"
+                    : "أوجد المجموع الحسابي الإجمالي للأعداد الثلاثة التالية:";
+                formulaString = `${n1} + ${n2} + ${n3}`;
+                rawOptions = [ans, ans + 10, ans - 5, ans + 100].map(String);
                 break;
             }
             case 'multiply11': {
                 let factor = Math.floor(Math.random() * 89) + 11;
-                correctAnswer = factor * 11;
+                let ans = factor * 11;
+                correctAnswerString = String(ans);
                 questionText = lang === 'en'
-                    ? `What is the exact mathematical product of: <br><br><strong>${factor} \\times 11</strong>?`
-                    : `ما هو الناتج الدقيق لعملية الضرب التالية: <br><br><strong>${factor} \\times 11</strong>؟`;
-                useKatex = true;
+                    ? "What is the exact mathematical product of:"
+                    : "ما هو الناتج الدقيق لعملية الضرب التالية:";
+                formulaString = `${factor} \\times 11`;
+                rawOptions = [ans, ans + 11, ans - 11, ans + 10].map(String);
                 break;
             }
-            case 'triangleArea': {
+             case 'triangleArea': {
                 let base = (Math.floor(Math.random() * 20) + 4) * 2;
                 let height = Math.floor(Math.random() * 15) + 3;
-                correctAnswer = (base * height) / 2;
-                questionText = lang === 'en'
-                    ? `A triangle features a base length of <strong>${base} cm</strong> and a vertical height of <strong>${height} cm</strong>. Calculate its total area.`
-                    : `مثلث طول قاعدته يساوي <strong>${base} سم</strong> وارتفاعه العمودي يبلغ <strong>${height} سم</strong>. احسب مساحته الكلية.`;
+                let ans = (base * height) / 2;
+                correctAnswerString = String(ans);
+
+                questionText = `A triangle features a base length of <strong>${base} cm</strong> and a vertical height of <strong>${height} cm</strong>. Calculate its total area (in cm²):`;
+                formulaString = String.raw`\text{Area} = \frac{\text{base} \times \text{height}}{2}`;
+
+                rawOptions = [ans, ans + 5, ans * 2, ans - 2].map(String);
+                lang = "en";
                 break;
             }
             case 'rightTriangleArea': {
                 let sideA = Math.floor(Math.random() * 12) + 5;
                 let sideB = Math.floor(Math.random() * 10) + 4;
-                correctAnswer = (sideA * sideB) / 2;
-                questionText = lang === 'en'
-                    ? `A right-angled triangle has two legs adjacent to the right angle measuring <strong>${sideA} cm</strong> and <strong>${sideB} cm</strong>. What is its total surface area?`
-                    : `مثلث قائم الزاوية يبلغ طول ضلعي القائمة المحيطين بالزاوية القائمة <strong>${sideA} سم</strong> و <strong>${sideB} سم</strong>. ما هي مساحته؟`;
+                let ans = (sideA * sideB) / 2;
+                correctAnswerString = String(ans);
+
+                questionText = `A right-angled triangle has two legs adjacent to the right angle measuring <strong>${sideA} cm</strong> and <strong>${sideB} cm</strong>. What is its total surface area (in cm²)?`;
+                formulaString = String.raw`\text{Area} = \frac{a \times b}{2}`;
+
+                rawOptions = [ans, ans + 4, sideA * sideB, ans - 3].map(String);
+                lang = "en";
+                break;
+            }
+            case 'semiEquilateral': {
+                let shortLeg = Math.floor(Math.random() * 8) + 3;
+                let hypotenuse = shortLeg * 2;
+                let subType = Math.random() > 0.5 ? 'findLong' : 'findShort';
+
+                if (subType === 'findLong') {
+                    correctAnswerString = String.raw`${shortLeg}\sqrt{3}`;
+                    questionText = `A 30°-60°-90° semi-equilateral triangle has a hypotenuse of <strong>${hypotenuse} cm</strong>. What is the length of its longest leg (in cm)?`;
+                    formulaString = String.raw`\text{Long Leg} = x\sqrt{3}`;
+
+                    rawOptions = [
+                        String.raw`${shortLeg}\sqrt{3}`,
+                        String.raw`${shortLeg}\sqrt{2}`,
+                        String.raw`${shortLeg}`,
+                        String.raw`${hypotenuse}`
+                    ];
+                } else {
+                    correctAnswerString = String(shortLeg);
+                    questionText = `A 30°-60°-90° semi-equilateral triangle has a long leg of <strong>\\(${shortLeg}\\sqrt{3}\\) cm</strong>. What is the length of its shortest leg (in cm)?`;
+                    formulaString = String.raw`\text{Short Leg} = x`;
+
+                    rawOptions = [
+                        String(shortLeg),
+                        String(shortLeg * 2),
+                        String(shortLeg * 3),
+                        String(shortLeg * 4)
+                    ];
+                }
+                lang = "en";
+                break;
+            }
+            case 'rightIsosceles': {
+                let leg = Math.floor(Math.random() * 12) + 2;
+                let subType = Math.random() > 0.5 ? 'findHyp' : 'findLeg';
+
+                if (subType === 'findHyp') {
+                    correctAnswerString = String.raw`${leg}\sqrt{2}`;
+                    questionText = `A right isosceles triangle features two equal legs measuring <strong>${leg} cm</strong> each. Calculate the exact length of its hypotenuse (in cm):`;
+                    formulaString = String.raw`\text{Hypotenuse} = x\sqrt{2}`;
+
+                    rawOptions = [
+                        String.raw`${leg}\sqrt{2}`,
+                        String.raw`${leg}\sqrt{3}`,
+                        String.raw`${leg}`,
+                        String.raw`${leg * 2}`
+                    ];
+                } else {
+                    correctAnswerString = String(leg);
+                    questionText = `A right isosceles triangle has a hypotenuse of <strong>\\(${leg}\\sqrt{2}\\) cm</strong>. What is the length of its equal sides (in cm)?`;
+                    formulaString = String.raw`\text{Side Leg} = x`;
+
+                    rawOptions = [
+                        String(leg),
+                        String(leg * 2),
+                        String(leg * 3),
+                        String(leg * 4)
+                    ];
+                }
+                lang = "en";
                 break;
             }
             case 'subtraction': {
                 let baseNum = Math.random() > 0.5 ? 100 : 1000;
                 let subtracted = Math.floor(Math.random() * (baseNum - 15)) + 10;
-                correctAnswer = baseNum - subtracted;
+                let ans = baseNum - subtracted;
+                correctAnswerString = String(ans);
                 questionText = lang === 'en'
-                    ? `Solve this mental calculation parameter swiftly: <br><br><strong style="font-size:2rem;">${baseNum} - ${subtracted}</strong>`
-                    : `حل مسألة الطرح الذهني السريع التالية مباشرة: <br><br><strong style="font-size:2rem;">${baseNum} - ${subtracted}</strong>`;
+                    ? "Solve this mental calculation parameter swiftly:"
+                    : "حل مسألة الطرح الذهني السريع التالية مباشرة:";
+                formulaString = `${baseNum} - ${subtracted}`;
+                rawOptions = [ans, ans + 10, ans - 10, ans + 5].map(String);
                 break;
             }
             case 'squareRoot': {
-                const rootsPool = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 30];
-                correctAnswer = rootsPool[Math.floor(Math.random() * rootsPool.length)];
-                let square = correctAnswer * correctAnswer;
+                let ans = rootsPool[Math.floor(Math.random() * rootsPool.length)];
+                let square = ans * ans;
+                correctAnswerString = String(ans);
                 questionText = lang === 'en'
-                    ? `Evaluate the numerical expression to find the root value: <br><br><strong>\\sqrt{${square}}</strong>`
-                    : `احسب القيمة العددية الصحيحة الناتجة عن مخرجات الجذر التربيعي التالي: <br><br><strong>\\sqrt{${square}}</strong>`;
-                useKatex = true;
+                    ? "Evaluate the numerical expression to find the root value:"
+                    : "احسب القيمة العددية الصحيحة الناتجة عن مخرجات الجذر التربيعي التالي:";
+                formulaString = `\\sqrt{${square}}`;
+                rawOptions = [ans, ans + 1, ans - 1, ans + 5].map(String);
                 break;
             }
             case 'percentageProfit': {
@@ -858,34 +973,69 @@ const questionBank = {
                 const factorsList = [1.25, 1.5, 1.75, 2.0];
                 let scaleFactor = factorsList[Math.floor(Math.random() * factorsList.length)];
                 let sellPrice = buyPrice * scaleFactor;
-
-                correctAnswer = Math.round(((sellPrice - buyPrice) / buyPrice) * 100);
+                let ans = Math.round(((sellPrice - buyPrice) / buyPrice) * 100);
+                correctAnswerString = ans + "%";
                 questionText = lang === 'en'
                     ? `You bought a mobile phone for <strong>$${buyPrice}</strong> and sold it later for <strong>$${sellPrice}</strong>. What is the total percentage profit?`
                     : `قمت بشراء هاتف ذكي بقيمة <strong>$${buyPrice}</strong> ثم قمت بإعادة بيعه لاحقاً بمبلغ <strong>$${sellPrice}</strong>. احسب النسبة المئوية للربح المحقق.`;
+                formulaString = "";
+                useKatex = false;
+                rawOptions = [ans, ans + 25, ans - 10, ans + 50].map(v => v + "%");
+                break;
+            }
+            case 'carPercentage': {
+                // Randomly pick a car company to make the word problem engaging
+                const carBrands = ["Ford", "Toyota", "Chevrolet", "Honda", "Nissan"];
+                let brand = carBrands[Math.floor(Math.random() * carBrands.length)];
+
+                // Generates a base price between \$4,000 and \$25,000 in clean intervals of 1000
+                let basePrice = (Math.floor(Math.random() * 22) + 4) * 1000;
+
+                // Picks a round percentage modifier from standard classroom intervals
+                const pctPool = [10, 20, 25, 30, 50];
+                let pct = pctPool[Math.floor(Math.random() * pctPool.length)];
+
+                let isIncrease = Math.random() > 0.5;
+                let priceChange = (basePrice * pct) / 100;
+                let ans = isIncrease ? (basePrice + priceChange) : (basePrice - priceChange);
+
+                correctAnswerString = `$${ans.toLocaleString()}`;
+                useKatex = false; // Kept false so regular currency values read left-to-right cleanly
+                formulaString = "";
+
+                if (lang === 'en') {
+                    let actionWord = isIncrease ? "an increase" : "a decrease";
+                    questionText = `The original price of a <strong>${brand}</strong> car is <strong>$${basePrice.toLocaleString()}</strong>. What becomes its final market price after ${actionWord} of <strong>${pct}%</strong>?`;
+                } else {
+                    let actionWord = isIncrease ? "زيادة" : "تخفيض";
+                    questionText = `السعر الأصلي لسيارة من نوع <strong>${brand}</strong> هو <strong>$${basePrice.toLocaleString()}</strong>. كم يصبح سعرها النهائي بعد ${actionWord} بنسبة <strong>${pct}%</strong>؟`;
+                }
+
+                // Generates realistic wrong values using alternative addition/subtraction slips
+                let fake1 = isIncrease ? (basePrice - priceChange) : (basePrice + priceChange);
+                let fake2 = ans + 500;
+                let fake3 = ans - 1000;
+
+                // If calculations collide, force fixed distinct numeric separation parameters
+                if (fake2 === basePrice || fake2 === fake1) fake2 = ans + 1500;
+                if (fake3 === basePrice || fake3 === fake1 || fake3 === fake2) fake3 = ans - 2500;
+
+                rawOptions = [ans, fake1, fake2, fake3].map(v => `$${v.toLocaleString()}`);
                 break;
             }
         }
 
-        let optionsSet = new Set([correctAnswer]);
-        while(optionsSet.size < 4) {
-            let variance = (Math.floor(Math.random() * 5) + 1) * (Math.random() > 0.5 ? 1 : -1);
-            let scalar = Math.random() > 0.5 ? 10 : 5;
-            let fakeAns = chosenType === 'percentageProfit'
-                ? correctAnswer + (variance * 5)
-                : correctAnswer + (variance * (Math.random() > 0.5 ? 1 : scalar));
-
-            if (fakeAns > 0 && fakeAns !== correctAnswer) {
-                optionsSet.add(fakeAns);
-            }
+        let uniqueOptions = Array.from(new Set(rawOptions));
+        if (!uniqueOptions.includes(correctAnswerString)) {
+            uniqueOptions.push(correctAnswerString);
         }
 
-        options = Array.from(optionsSet).sort((a, b) => a - b);
-        let finalOptionsStrings = options.map(opt => chosenType === 'percentageProfit' ? `${opt}%` : `${opt}`);
-        let finalCorrectIndex = options.indexOf(correctAnswer);
+        let finalOptionsStrings = uniqueOptions.sort(() => Math.random() - 0.5);
+        let finalCorrectIndex = finalOptionsStrings.indexOf(correctAnswerString);
 
         return {
             text: questionText,
+            formula: formulaString, // Holds the clean, raw math formula string safely!
             options: finalOptionsStrings,
             correctIndex: finalCorrectIndex,
             score: assignedScore,
